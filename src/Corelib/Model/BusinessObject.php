@@ -110,7 +110,7 @@ abstract class BusinessObject
      *
      * @return array current value of members
      */
-    protected function getMember($key) {
+    public function getMember($key) {
         if (! (isset($this->members[$key]) || array_key_exists($key, $this->members)) ) {
             throw new \BadMethodCallException("Trying to get a propety that does not exists ($key)");
         } //if
@@ -124,7 +124,7 @@ abstract class BusinessObject
      *
      * @param array value to assign to members
      */
-    protected function setMember($key, $value) {
+    public function setMember($key, $value) {
         if (! (isset($this->members[$key]) || array_key_exists($key, $this->members)) ) {
             throw new \BadMethodCallException("Trying to set a propety that does not exists ($key)");
         } //if
