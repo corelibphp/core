@@ -6,6 +6,8 @@
  * @author Patrick Forget <patforg@geekpad.ca>
  */
 
+namespace Corelib\Data;
+
 /**
  * Defines a relationship between to Data Models
  *
@@ -17,13 +19,31 @@ class Relationship
 
     /**
      * one to one relationship
+     * e.g. one user is linked to one profile 
+     * (one profile per user, profiles cannot be shared between users)
      */
     const TYPE_ONE_TO_ONE = 1;
 
     /**
-     * ont to many relationship
+     * one to many relationship
+     * e.g. one user is linked to many contacts 
+     * (one user for many contacts, contacts cannot be shared between users)
      */
     const TYPE_ONE_TO_MANY = 2;
+
+    /**
+     * many to one relationship
+     * e.g. many users are linked to one preffered language 
+     * (one user is linked to one language, languages can be shared between users)
+     */
+    const TYPE_MANY_TO_ONE = 3;
+
+    /**
+     * many to many relationship
+     * e.g. many users are linked to many groups
+     * (many users are linked to many groups, groups can be shared between users)
+     */
+    const TYPE_MANY_TO_MANY = 3;
 
     /**
      * @var int
@@ -40,6 +60,34 @@ class Relationship
      */
     private $memberName = '';
 
+    /**
+     * @var array
+     */
+    private $keyMemberName = '';
+
+    /**
+     * retrieve value for keyMemberName
+     *
+     * @since  2014-04-16
+     * @author Patrick Forget <patforg@geekpad.ca>
+     *
+     * @return array current value of keyMemberName
+     */
+    public function getKeyMemberName() {
+        return $this->keyMemberName;
+    } // getKeyMemberName()
+
+    /**
+     * assign value for keyMemberName
+     *
+     * @since  2014-04-16
+     * @author Patrick Forget <patforg@geekpad.ca>
+     *
+     * @param array value to assign to keyMemberName
+     */
+    public function setKeyMemberName($value) {
+        $this->keyMemberName = $value;
+    } // setKeyMemberName()
 
     /**
      * retrieve value for memberName
@@ -121,6 +169,7 @@ class Relationship
     public function __construct($type, $memberName, \Corelib\Data\DataAccessObject $dao) {
         $this->setType($type);
         $this->setMemberName($memberName);
+        $this->setKeyMemberName("{$memberName}Id");
         $this->setDAO($dao);
     } // __construct()
 
