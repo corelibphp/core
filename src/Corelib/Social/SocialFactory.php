@@ -9,6 +9,7 @@
 namespace Corelib\Social;
 
 use Corelib\Database;
+use Corelib\Data;
 
 /**
  * Builds social related classes
@@ -51,11 +52,11 @@ class SocialFactory
 
         $db = Database\DatabaseFactory::getPDO('read');
 
-        $dao = new Data\FacebookUserMapDAOMySQL($db);
+        $dao = new \Corelib\Social\Data\FacebookUserMapDAOMySQL($db);
 
         $relationships = array(
-            new Relationship(
-                Relationship::TYPE_ONE_TO_ONE, 
+            'user' => new Data\Relationship(
+                Data\Relationship::TYPE_ONE_TO_ONE, 
                 'user',
                 \Corelib\User\UserFactory::getUserDAO()
             )
