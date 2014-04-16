@@ -26,8 +26,8 @@ class FacebookUserMapDAOMySQL extends \Corelib\Data\AccessMySQL implements \Core
     public function __construct(\PDO $dbRead) {
         parent::__construct(
             $dbRead,
-            '\Corelib\Model\FacebookUserMapBO',
-            '\Corelib\Model\FacebookUserMapCollection'
+            '\Corelib\Social\Model\FacebookUserMapBO',
+            '\Corelib\Social\Model\FacebookUserMapCollection'
         );
     } // __construct()
 
