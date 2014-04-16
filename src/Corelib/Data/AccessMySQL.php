@@ -333,9 +333,42 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
             throw \InvalidArgumentException("table name cannot contain backticks \"`\"");
         } //if
 
+        $relationships = $this->getRelationships();
+        $relationshipData = array();
+        $relationshipsToLoad = array();
+        $relationshipsToLoadInLoop = array();
+        if (isset($options['loadRelationships'])) {
+            if (is_array($options['loadRelationships'])) {
+                foreach ($options['loadRelationships'] as $relationshipName) {
+                    $relationshipsToLoad[$relationshipName] = true;
+                } // foreach()
+            } else {
+                $relationshipsToLoad[$options['loadRelationships']] = true;
+            } //if
+        } //if
+
+        $fieldsToIngnore = array();
+        foreach($relationships as $relationshipName => $relationship) {
+            $memberName = $relationship->getMemberName();
+            $fieldsToIngnore[$memberName] = true;
+
+            if (isset($relationshipsToLoad[$relationshipName])) {
+
+                switch ($relationship->getType()) {
+                    case \CoreLib\Data\Relationship::TYPE_ONE_TO_ONE:
+                        $relationshipsToLoadInLoop[$relationshipName] = $relationship;
+                        $relationshipData[$relationshipName] = array();
+                        break;
+                } //switch
+            } //if
+        } //foreach()
+
         ob_start();
         foreach ($this->getColumnMap() as $propName => $columnName) {
-            echo "a.`{$columnName}`,";
+            if (isset($fieldsToIngnore[$propName])) {
+                continue;
+            } //if
+            echo "a.`{$columnName}` as `{$propName}`,";
         } //foreach
 
         $columns = ob_get_contents();
@@ -363,13 +396,49 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
 
         while ($row = $this->rowFilter($searchQuery->fetch())) {
 
+            $id = $row['id'];
+
             $resultBO = new $objectClass($row);
 
             $resultBO->setIsNew(false);
 
-            $collection[] = $resultBO;
+            $collection[$id] = $resultBO;
+
+            /* one to one relationships */
+            foreach ($relationshipsToLoadInLoop as $relationshipName => $relationship) {
+                switch ($relationship->getType()) {
+                    case \CoreLib\Data\Relationship::TYPE_ONE_TO_ONE:
+                        $keyName = $relationship->getKeyMemberName();
+                        $relationshipData[$relationshipName][$row[$keyName]] = $resultBO;
+                        break;
+                } //switch
+            } //foreach 
 
         } //while;
+
+        foreach (array_keys($relationshipsToLoad) as $relationshipName) {
+            $relationship = $relationships[$relationshipName];
+
+            switch ($relationship->getType()) {
+                case \CoreLib\Data\Relationship::TYPE_ONE_TO_ONE:
+                    $idsToLoad = array_keys($relationshipData[$relationshipName]);
+                    $dao = $relationship->getDAO();
+                    $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
+
+                    $results = $dao->search("id IN (". implode(",", $idsToLoad) .")");
+                    $memberName = $relationship->getMemberName();
+
+                    foreach($results as $resultBO) {
+                        $key = $resultBO->getId();
+                        $targetBO = $relationshipData[$relationshipName][$key];
+                        $targetBO->setMember($memberName, $resultBO);
+                        $targetBO->resetDirtyFlag($memberName);
+                    } //foreach
+
+                    break;
+            } //switch
+                
+        } //if
 
         return $collection;
 
