@@ -430,9 +430,11 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
 
                     foreach($results as $resultBO) {
                         $key = $resultBO->getId();
-                        $targetBO = $relationshipData[$relationshipName][$key];
-                        $targetBO->setMember($memberName, $resultBO);
-                        $targetBO->resetDirtyFlag($memberName);
+                        if (isset($relationshipData[$relationshipName][$key])) {
+                            $targetBO = $relationshipData[$relationshipName][$key];
+                            $targetBO->setMember($memberName, $resultBO);
+                            $targetBO->resetDirtyFlag($memberName);
+                        } //if
                     } //foreach
 
                     break;
