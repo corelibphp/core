@@ -167,6 +167,9 @@ abstract class BusinessObject
 
         /* set all remaing values or use defaults if no value provided */
         $this->members = array_merge(static::$allowedMembers, $allowedValues);
+        
+        $this->dirtyMembers = array_map(function ($name) {return true; }, $allowedValues);
+
     } // __construct()
 
     /**
