@@ -18,6 +18,17 @@ class UserDSOMySQL extends \Corelib\Data\StoreMySQL implements \Corelib\User\Dat
 {
 
     /**
+     * class constructor
+     *
+     * @since  2014-04-16
+     * @author Patrick Forget <patforg@geekpad.ca>
+     */
+    public function __construct(\PDO $dbWrite) {
+        parent::__construct($dbWrite, '\Corelib\User\Model\UserBO');
+    } // __construct()
+
+
+    /**
      * @since  2014-03-06
      * @author Patrick Forget <patforg@geekpad.ca>
      */
