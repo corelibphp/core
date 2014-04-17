@@ -19,6 +19,35 @@ abstract class StoreMySQL extends \Corelib\Data\DataStoreObject
      * @var array
      */
     private $columnMap = null;
+
+     /**
+      * @var string
+      */
+     private $objectClass = '';
+
+     /**
+      * retrieve value for objectClass
+      *
+      * @since  2014-03-06
+      * @author Patrick Forget <patforg@geekpad.ca>
+      *
+      * @return string current value of objectClass
+      */
+     protected function getObjectClass() {
+         return $this->objectClass;
+     } // getObjectClass()
+
+     /**
+      * assign value for objectClass
+      *
+      * @since  2014-03-06
+      * @author Patrick Forget <patforg@geekpad.ca>
+      *
+      * @param string value to assign to objectClass
+      */
+     protected function setObjectClass($value) {
+         $this->objectClass = $value;
+     } // setObjectClass()
     
     /**
      * retrieve value for columnMap
@@ -28,6 +57,18 @@ abstract class StoreMySQL extends \Corelib\Data\DataStoreObject
      * @return array current value of columnMap
      */
     public function getColumnMap() {
+
+        if ($this->columnMap === null) {
+
+            $camelToUnderscoreFunction = function ($name) {
+                return strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $name));
+            }; // camelCase to underscore
+
+            $objectClass = $this->getObjectClass();
+            $members  = $objectClass::getAllowedMembers();
+            $this->columnMap = array_combine($members, array_map($camelToUnderscoreFunction, $members));
+        } //if
+
         return $this->columnMap;
     } // getColumnMap()
     
@@ -82,11 +123,12 @@ abstract class StoreMySQL extends \Corelib\Data\DataStoreObject
      * @author Patrick Forget <patforg at geekpad.ca>
      * @since 2013
      */
-    public function __construct(\PDO $dbWrite) {
+    public function __construct(\PDO $dbWrite, $objectClass) {
         
         parent::__construct();
 
         $this->setDBWrite($dbWrite);
+        $this->setObjectClass($objectClass);
 
     } // __construct()
 
@@ -159,6 +201,7 @@ abstract class StoreMySQL extends \Corelib\Data\DataStoreObject
 
         $columnsToSave = array();
         $values = array();
+
         foreach ($item->getDirtyFlags() as $field) {
             
             if ( isset($fieldsToIgnore[$field]) ) {
@@ -185,7 +228,6 @@ abstract class StoreMySQL extends \Corelib\Data\DataStoreObject
             
         } //foreach
 
-        
         $primaryKeyValue = $item->$primaryKeyAccessor();
         
         /* apply functions to certain values */
