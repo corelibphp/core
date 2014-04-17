@@ -76,7 +76,7 @@ class SocialFactory
     public static function getFacebookUserMapDSO() {
         $db = Database\DatabaseFactory::getPDO('write');
 
-        $dso = new Data\FacebookUserMapDAOMySQL($db);
+        $dso = new \Corelib\Social\Data\FacebookUserMapDSOMySQL($db);
 
         return $dso;
     } // getFacebookUserMapDSO()
