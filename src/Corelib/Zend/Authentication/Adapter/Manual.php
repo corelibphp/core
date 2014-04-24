@@ -35,8 +35,8 @@ class Manual implements \Zend\Authentication\Adapter\AdapterInterface
      * @param mixed $userId false will always cause a failure result and any other value will
      *     use the provided id and return a successful auth
      */
-    public function __construct($userId) {
-       $this->userId = $userId; 
+    public function __construct($identity) {
+       $this->identity = $identity; 
     } // __construct()
 
     /**
@@ -47,15 +47,13 @@ class Manual implements \Zend\Authentication\Adapter\AdapterInterface
      */
     public function authenticate() {
 
-        if ($this->userId === false) {
+        if ($this->identity === false) {
             $code = Result::FAILURE;
-            $identity = '';
         } else {
             $code = Result::SUCCESS;
-            $identity = $this->userId;
         } //if
 
-        return new Result($code, $identity, $messages = array() );
+        return new Result($code, $this->identity, $messages = array() );
 
     } // authenticate()
 
