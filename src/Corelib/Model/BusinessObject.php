@@ -26,10 +26,6 @@ abstract class BusinessObject
      */
     private $isNew = true;
 
-    /**
-     * @var array
-     */
-    static protected $allowedMembers = array();
 
     /**
      * retrieve value for isNew
@@ -162,11 +158,13 @@ abstract class BusinessObject
             throw new \InvalidArgumentException('Expecting $members to be an Array');
         } //if
 
+        $defaultValues = static::getDefaultValues();
+
         /* filter out values that are not allowed */
-        $allowedValues = array_intersect_key($members, static::$allowedMembers);
+        $allowedValues = array_intersect_key($members, $defaultValues);
 
         /* set all remaing values or use defaults if no value provided */
-        $this->members = array_merge(static::$allowedMembers, $allowedValues);
+        $this->members = array_merge($defaultValues, $allowedValues);
         
         $this->dirtyMembers = array_map(function ($name) {return true; }, $allowedValues);
 
@@ -194,7 +192,7 @@ abstract class BusinessObject
     public function setMembers(array $keyValues) {
                 
         /* filter out values that are not allowed */
-        $allowedValues = array_intersect_key($keyValues, static::$allowedMembers);
+        $allowedValues = array_intersect_key($keyValues, static::getAllowedMembers());
 
         foreach($allowedValues as $key => $value) {
             $this->setMember($key, $value);
@@ -212,8 +210,19 @@ abstract class BusinessObject
      * @return array list of allowed members
      */
     static public function getAllowedMembers() {
-        return array_keys(static::$allowedMembers);
+        return array_keys(static::getDefaultValues());
     } // getAllowedMembers()
+
+    /**
+     * retreive allowed member and their default values
+     *
+     * @since  2014-04-24
+     * @author Patrick Forget <patforg@geekpad.ca>
+     */
+    static protected function getDefaultValues() {
+        return array();
+    } // getDefaultValues()
+
 
     /**
      * converts current object to an array

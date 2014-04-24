@@ -15,10 +15,23 @@ namespace Corelib\Config\Model;
 class ConfigBO extends \Corelib\Model\BusinessObject
 {
 
-    static protected $allowedMemebers = array(
-        'id' => '',
-        'env' => '',
-        'values' => array()
-    );
+    /**
+     * @since  2014-04-24
+     * @author Patrick Forget <patforg@geekpad.ca>
+     */
+    static protected function getDefaultValues() {
+        static $members = null;
+
+        if ($members === null) {
+            $members = array_merge(parent::getDefaultValues(),array(
+                'id' => '',
+                'env' => '',
+                'values' => array()
+            ));
+
+        } //if
+
+        return $members;
+    } // getDefaultValues()
 
 } // ConfigBO class
