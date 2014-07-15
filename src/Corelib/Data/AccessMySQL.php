@@ -185,8 +185,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
      */
     protected function getOrder($options) {
         $order = ' ';
-        if (key_exists('order', $options)) {
-
+        if (isset($options['order'])) {
             $translatedOrder = array();
             $columnName = null;
             $equivalents = $this->getColumnMap();
@@ -198,12 +197,12 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
                 $propertyName = trim($propertyName);
                 $direction = ($direction ? trim($direction) : 'ASC');
                 
-                $columnName = (key_exists($propertyName, $equivalents) ? $equivalents[$propertyName] : $propertyName);
+                $columnName = (isset($equivalents[$propertyName]) ? $equivalents[$propertyName] : $propertyName);
 
                 $translatedOrder[] = '`'. $columnName .'` '. $direction;
             } //foreach
             
-            $order = implode(', ', $translatedSorts);
+            $order = 'ORDER BY '. implode(', ', $translatedOrder);
 
         } //if
         
@@ -223,7 +222,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
             $offset = (key_exists('offset', $options) ? $options['offset'] : '0');
             $limit = ' LIMIT ' . $offset . ', ' . $options['limit'] .' ';
         } elseif (key_exists('offset', $options)) {
-            $limit = ' LIMIT ' . $options['offset'] . ', 999999999 ';
+            $limit = ' limit ' . $options['offset'] . ', 999999999 ';
         } else {
             $limit = ' ';
         } //if
@@ -329,9 +328,14 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
      */
     protected function commonSearch($condition, $tableName, $options) {
 
+        $fieldsToIngnore = isset($options['fieldsToIgnore']) ? $options['fieldsToIgnore'] : array();
+        $totalResultCount = isset($options['totalResultCount']) && $options['totalResultCount'] === true ? true : false;
+
         if (strpos($tableName, "`") !== false) {
             throw \InvalidArgumentException("table name cannot contain backticks \"`\"");
         } //if
+
+        $columnMap = $this->getColumnMap();
 
         $relationships = $this->getRelationships();
         $relationshipData = array();
@@ -347,7 +351,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
             } //if
         } //if
 
-        $fieldsToIngnore = array();
+
         foreach($relationships as $relationshipName => $relationship) {
             $memberName = $relationship->getMemberName();
             $fieldsToIngnore[$memberName] = true;
@@ -364,7 +368,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
         } //foreach()
 
         ob_start();
-        foreach ($this->getColumnMap() as $propName => $columnName) {
+        foreach ($columnMap as $propName => $columnName) {
             if (isset($fieldsToIngnore[$propName])) {
                 continue;
             } //if
@@ -375,14 +379,15 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
         ob_end_clean();
         $columns = rtrim($columns, ', ');    
 
+
         $searchSQL = "
             SELECT 
                 {$columns}
             FROM 
-              `{$tableName}` a
+                `{$tableName}` a
             WHERE 
-                {$this->getTranslatedCondition($condition, $this->getColumnMap())} 
-            {$this->getOrder($options)} {$this->getLimit($options)} 
+                {$this->getTranslatedCondition($condition, $columnMap)} 
+                {$this->getOrder($options)} {$this->getLimit($options)} 
         ";
 
         $db = $this->getDBRead();
@@ -414,8 +419,27 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
                 } //switch
             } //foreach 
 
-        } //while;
+        } //while
+        unset($searchQuery);
 
+        if ($totalResultCount) {
+            $countSQL = "
+                SELECT 
+                    count(1)
+                FROM 
+                    `{$tableName}` a
+                WHERE 
+                    {$this->getTranslatedCondition($condition, $columnMap)} 
+            ";
+
+            $countQuery = $db->query($countSQL);
+            $collection->setFullCollectionCount($countQuery->fetchColumn());
+            unset($countQuery);
+        } //if
+
+        /*---------------------------------------------------------------------------*
+         *                           LOAD RELATIONSHIPS                              *
+         *---------------------------------------------------------------------------*/
         foreach (array_keys($relationshipsToLoad) as $relationshipName) {
             $relationship = $relationships[$relationshipName];
 
