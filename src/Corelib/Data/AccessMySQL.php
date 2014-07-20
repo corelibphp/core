@@ -347,10 +347,10 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
             } //if
         } //if
 
-        $fieldsToIngnore = array();
+        $fieldsToIgnore = isset($options['fieldsToIgnore']) ? $options['fieldsToIgnore'] : array();
         foreach($relationships as $relationshipName => $relationship) {
             $memberName = $relationship->getMemberName();
-            $fieldsToIngnore[$memberName] = true;
+            $fieldsToIgnore[$memberName] = true;
 
             if (isset($relationshipsToLoad[$relationshipName])) {
 
@@ -365,7 +365,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
 
         ob_start();
         foreach ($this->getColumnMap() as $propName => $columnName) {
-            if (isset($fieldsToIngnore[$propName])) {
+            if (isset($fieldsToIgnore[$propName])) {
                 continue;
             } //if
             echo "a.`{$columnName}` as `{$propName}`,";
@@ -374,6 +374,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
         $columns = ob_get_contents();
         ob_end_clean();
         $columns = rtrim($columns, ', ');    
+        $columnMap = $this->getColumnMap();
 
         $searchSQL = "
             SELECT 
@@ -381,7 +382,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
             FROM 
               `{$tableName}` a
             WHERE 
-                {$this->getTranslatedCondition($condition, $this->getColumnMap())} 
+                {$this->getTranslatedCondition($condition, $columnMap)} 
             {$this->getOrder($options)} {$this->getLimit($options)} 
         ";
 
