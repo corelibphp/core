@@ -192,7 +192,7 @@ abstract class BusinessObject
     public function setMembers(array $keyValues) {
                 
         /* filter out values that are not allowed */
-        $allowedValues = array_intersect_key($keyValues, static::getAllowedMembers());
+        $allowedValues = array_intersect_key($keyValues, static::getDefaultValues());
 
         foreach($allowedValues as $key => $value) {
             $this->setMember($key, $value);
