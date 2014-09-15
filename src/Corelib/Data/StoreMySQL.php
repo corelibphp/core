@@ -283,13 +283,13 @@ abstract class StoreMySQL extends \Corelib\Data\DataStoreObject
             
             try {
                 $retVal = $saveQuery->execute($values);
-            } catch (Exception $e) {
+            } catch (PDOException $e) {
                 
                 $message = "Problem saving item (". get_class($item) .") "
                     ."Error: ". $e->getMessage() ." "
                     ."Query: ". $saveSQL;
 
-                throw new Exception($message);
+                throw new Exception($messagem, 0, $e);
             } //catch
             
             if ($isNew) {
