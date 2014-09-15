@@ -408,6 +408,8 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
 
             $resultBO->setIsNew(false);
 
+            $resultBO->resetDirtyFlags();
+
             $collection[$id] = $resultBO;
 
             /* one to one relationships */
