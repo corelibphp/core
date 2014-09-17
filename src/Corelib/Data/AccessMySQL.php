@@ -351,7 +351,6 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
             } //if
         } //if
 
-        $fieldsToIgnore = isset($options['fieldsToIgnore']) ? $options['fieldsToIgnore'] : array();
         foreach($relationships as $relationshipName => $relationship) {
             $memberName = $relationship->getMemberName();
             $fieldsToIgnore[$memberName] = true;
@@ -467,7 +466,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
                     break;
             } //switch
                 
-        } //if
+        } //foreach
 
         return $collection;
 
