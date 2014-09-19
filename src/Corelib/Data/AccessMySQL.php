@@ -359,6 +359,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
 
                 switch ($relationship->getType()) {
                     case \CoreLib\Data\Relationship::TYPE_ONE_TO_ONE:
+                    case \CoreLib\Data\Relationship::TYPE_MANY_TO_ONE:
                         $relationshipsToLoadInLoop[$relationshipName] = $relationship;
                         // will map relationship's result ids back to the linked BO
                         $relationshipData[$relationshipName] = array();
@@ -422,6 +423,12 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
                     case \CoreLib\Data\Relationship::TYPE_ONE_TO_ONE:
                         $relationshipData[$relationshipName][$row[$keyName]] = $resultBO;
                         break;
+                    case \CoreLib\Data\Relationship::TYPE_MANY_TO_ONE:
+                        if (!isset($relationshipData[$relationshipName][$row[$keyName]])) {
+                            $relationshipData[$relationshipName][$row[$keyName]] = array();
+                        } //if
+                        $relationshipData[$relationshipName][$row[$keyName]][] = $resultBO;
+                        break;
                     case \CoreLib\Data\Relationship::TYPE_ONE_TO_MANY:
                         /* Initialized the target collection */
                         $memberName = $relationship->getMemberName();
@@ -470,6 +477,25 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
                             $targetBO = $relationshipData[$relationshipName][$key];
                             $targetBO->setMember($memberName, $resultBO);
                             $targetBO->resetDirtyFlag($memberName);
+                        } //if
+                    } //foreach
+
+                    break;
+                case \CoreLib\Data\Relationship::TYPE_MANY_TO_ONE:
+                    $idsToLoad = array_keys($relationshipData[$relationshipName]);
+                    $dao = $relationship->getDAO();
+                    $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
+
+                    $results = $dao->search("id IN (". implode(",", $idsToLoad) .")");
+                    $memberName = $relationship->getMemberName();
+
+                    foreach($results as $resultBO) {
+                        $key = $resultBO->getId();
+                        if (isset($relationshipData[$relationshipName][$key])) {
+                            foreach ($relationshipData[$relationshipName][$key] as $targetBO) {
+                                $targetBO->setMember($memberName, $resultBO);
+                                $targetBO->resetDirtyFlag($memberName);
+                            } //foreach
                         } //if
                     } //foreach
 
