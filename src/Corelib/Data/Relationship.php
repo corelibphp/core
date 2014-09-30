@@ -43,7 +43,7 @@ class Relationship
      * e.g. many users are linked to many groups
      * (many users are linked to many groups, groups can be shared between users)
      */
-    const TYPE_MANY_TO_MANY = 3;
+    const TYPE_MANY_TO_MANY = 4;
 
     /**
      * @var int
