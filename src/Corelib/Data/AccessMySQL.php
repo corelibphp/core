@@ -40,7 +40,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
       *
       * @return string current value of collectionClass
       */
-     protected function getCollectionClass() {
+     public function getCollectionClass() {
          return $this->collectionClass;
      } // getCollectionClass()
 
@@ -63,7 +63,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
       *
       * @return string current value of objectClass
       */
-     protected function getObjectClass() {
+     public function getObjectClass() {
          return $this->objectClass;
      } // getObjectClass()
 
@@ -360,7 +360,11 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
                 switch ($relationship->getType()) {
                     case \CoreLib\Data\Relationship::TYPE_ONE_TO_ONE:
                         $relationshipsToLoadInLoop[$relationshipName] = $relationship;
+                        // will map relationship's result ids back to the linked BO
                         $relationshipData[$relationshipName] = array();
+                        break;
+                    case \CoreLib\Data\Relationship::TYPE_ONE_TO_MANY:
+                        $relationshipsToLoadInLoop[$relationshipName] = $relationship;
                         break;
                 } //switch
             } //if
@@ -413,10 +417,16 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
 
             /* one to one relationships */
             foreach ($relationshipsToLoadInLoop as $relationshipName => $relationship) {
+                $keyName = $relationship->getKeyMemberName();
                 switch ($relationship->getType()) {
                     case \CoreLib\Data\Relationship::TYPE_ONE_TO_ONE:
-                        $keyName = $relationship->getKeyMemberName();
                         $relationshipData[$relationshipName][$row[$keyName]] = $resultBO;
+                        break;
+                    case \CoreLib\Data\Relationship::TYPE_ONE_TO_MANY:
+                        /* Initialized the target collection */
+                        $memberName = $relationship->getMemberName();
+                        $relCollectionClass = $relCollectionClass->getDAO()->getCollectionClass();
+                        $resultBO->setMember($memberName, new $relCollectionClass());
                         break;
                 } //switch
             } //foreach 
@@ -460,6 +470,32 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
                             $targetBO = $relationshipData[$relationshipName][$key];
                             $targetBO->setMember($memberName, $resultBO);
                             $targetBO->resetDirtyFlag($memberName);
+                        } //if
+                    } //foreach
+
+                    break;
+                case \CoreLib\Data\Relationship::TYPE_ONE_TO_MANY:
+                    /* The link is done on the target DAO site. The current 
+                     * result Ids are used in the search condition. Lets say
+                     * we are trying to load a persons' contacts the keyName 
+                     * would be personId property of the contact's DAO. We 
+                     * then append to the collection genereated in the main
+                     * load loop.  */
+                    $idsToLoad = array_keys($collection);
+
+                    $dao = $relationship->getDAO();
+                    $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
+
+                    $keyName = $relationship->getKeyMemberName();
+                    $results = $dao->search("{$keyName} IN (". implode(",", $idsToLoad) .")");
+
+                    $memberName = $relationship->getMemberName();
+
+                    foreach($results as $resultBO) {
+                        $collectionId = $resultBO->getMember($keyName);
+                        if (isset($collection[$collectionId])) {
+                            $targetCollection = $collection[$collectionId]->getMember($memberName);
+                            $targetCollection->append($resultBO);
                         } //if
                     } //foreach
 
