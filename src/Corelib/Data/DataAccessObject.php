@@ -36,9 +36,31 @@ abstract class DataAccessObject
      *
      * @param array value to assign to relationships
      */
-    public function setRelationships($value) {
-        $this->relationships = $value;
+    public function setRelationships($relationships) {
+        foreach($relationships as $name => $relationship) {
+            $this->setRelationship($name, $relationship);
+        } //foreach
     } // setRelationships()
+
+    /**
+     * add a single relationship
+     *
+     * @since  2014-10-03
+     * @author Patrick Forget <patforg@geekpad.ca>
+     */
+    public function setRelationship($name, $relationship) {
+        $this->relationships[$name] = $relationship;
+    } // setRelationship()
+
+    /**
+     * get a single relationship by its namn
+     *
+     * @since  2014-10-03
+     * @author Patrick Forget <patforg@geekpad.ca>
+     */
+    public function getRelationship($name) {
+        return (isset($this->relationships[$name]) ? $this->relationships[$name] : null);
+    } // getRelationship()
     
     /**
      * class constructor
