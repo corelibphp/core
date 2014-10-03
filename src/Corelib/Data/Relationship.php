@@ -51,19 +51,53 @@ class Relationship
     private $type = self::TYPE_ONE_TO_ONE;
 
     /**
+     * DAO to join from
      * @var \Corelib\Data\DataAccessObject
      */
     private $dao = null;
 
     /**
+     * property that we need to set the result BO to
      * @var string
      */
     private $memberName = '';
 
     /**
+     * property that is the target key to join on
      * @var array
      */
     private $keyMemberName = '';
+
+    /**
+     * property that cotains the result BO to retreive (many to many only)
+     * @var string
+     */
+    private $resultMemberName = '';
+
+
+    /**
+     * retrieve value for resultMemberName
+     *
+     * @since  2014-10-02
+     * @author Patrick Forget <patforg@geekpad.ca>
+     *
+     * @return string current value of resultMemberName
+     */
+    public function getResultMemberName() {
+        return $this->resultMemberName;
+    } // getResultMemberName()
+
+    /**
+     * assign value for resultMemberName
+     *
+     * @since  2014-10-02
+     * @author Patrick Forget <patforg@geekpad.ca>
+     *
+     * @param string value to assign to resultMemberName
+     */
+    public function setResultMemberName($value) {
+        $this->resultMemberName = $value;
+    } // setResultMemberName()
 
     /**
      * retrieve value for keyMemberName
@@ -147,6 +181,7 @@ class Relationship
     public function getType() {
         return $this->type;
     } // getType()
+
 
     /**
      * assign value for type
