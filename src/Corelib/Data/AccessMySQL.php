@@ -365,9 +365,11 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
                         $relationshipData[$relationshipName] = array();
                         break;
                     case \CoreLib\Data\Relationship::TYPE_ONE_TO_MANY:
+                    case \CoreLib\Data\Relationship::TYPE_MANY_TO_MANY:
                         $relationshipsToLoadInLoop[$relationshipName] = $relationship;
                         break;
                 } //switch
+
             } //if
         } //foreach()
 
@@ -400,13 +402,20 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
         $collectionClass = $this->getCollectionClass(); 
         $objectClass = $this->getObjectClass();
         $collection = new $collectionClass();
+        $resultIds = array();
 
-        $searchQuery = $db->query($searchSQL);
+        try {
+            $searchQuery = $db->query($searchSQL);
+        } catch (\PDOException $e) {
+            throw new \Exception("Search query failed: {$searchSQL}", 0, $e);
+        } //try
+
         $searchQuery->setFetchMode(\PDO::FETCH_ASSOC);
 
         while ($row = $this->rowFilter($searchQuery->fetch())) {
 
             $id = $row['id'];
+            $resultIds[] = $id;
 
             $resultBO = new $objectClass($row);
 
@@ -432,7 +441,15 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
                     case \CoreLib\Data\Relationship::TYPE_ONE_TO_MANY:
                         /* Initialized the target collection */
                         $memberName = $relationship->getMemberName();
-                        $relCollectionClass = $relCollectionClass->getDAO()->getCollectionClass();
+                        $relCollectionClass = $relationship->getDAO()->getCollectionClass();
+                        $resultBO->setMember($memberName, new $relCollectionClass());
+                        break;
+                    case \CoreLib\Data\Relationship::TYPE_MANY_TO_MANY:
+                        /* Initialized the target collection */
+                        $memberName = $relationship->getMemberName();
+                        $resultMemberName = $relationship->getResultMemberName();
+                        $subRelationship = $relationship->getDAO()->getRelationship($resultMemberName);
+                        $relCollectionClass = $subRelationship->getDAO()->getCollectionClass();
                         $resultBO->setMember($memberName, new $relCollectionClass());
                         break;
                 } //switch
@@ -441,94 +458,136 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
         } //while
         unset($searchQuery);
 
+        $resultCount = count($collection);
         if ($totalResultCount) {
-            $countSQL = "
-                SELECT 
-                    count(1)
-                FROM 
-                    `{$tableName}` a
-                WHERE 
-                    {$this->getTranslatedCondition($condition, $columnMap)} 
-            ";
+            $limit = isset($options['limit']) ? $options['limit'] : 0;
+            if ($resultCount < $limit || $limit === 0) {
+                $collection->setFullCollectionCount($resultCount);
+            } else {
+                $countSQL = "
+                    SELECT 
+                        count(1)
+                    FROM 
+                        `{$tableName}` a
+                    WHERE 
+                        {$this->getTranslatedCondition($condition, $columnMap)} 
+                ";
 
-            $countQuery = $db->query($countSQL);
-            $collection->setFullCollectionCount($countQuery->fetchColumn());
-            unset($countQuery);
+                $countQuery = $db->query($countSQL);
+                $collection->setFullCollectionCount($countQuery->fetchColumn());
+                unset($countQuery);
+            } //if 
         } //if
 
         /*---------------------------------------------------------------------------*
          *                           LOAD RELATIONSHIPS                              *
          *---------------------------------------------------------------------------*/
-        foreach (array_keys($relationshipsToLoad) as $relationshipName) {
-            $relationship = $relationships[$relationshipName];
+        if ($resultCount > 0) {
+            foreach (array_keys($relationshipsToLoad) as $relationshipName) {
+                $relationship = $relationships[$relationshipName];
 
-            switch ($relationship->getType()) {
-                case \CoreLib\Data\Relationship::TYPE_ONE_TO_ONE:
-                    $idsToLoad = array_keys($relationshipData[$relationshipName]);
-                    $dao = $relationship->getDAO();
-                    $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
+                switch ($relationship->getType()) {
+                    case \CoreLib\Data\Relationship::TYPE_ONE_TO_ONE:
+                        $idsToLoad = array_keys($relationshipData[$relationshipName]);
+                        $dao = $relationship->getDAO();
+                        $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
 
-                    $results = $dao->search("id IN (". implode(",", $idsToLoad) .")");
-                    $memberName = $relationship->getMemberName();
+                        $results = $dao->search("id IN (". implode(",", $idsToLoad) .")");
+                        $memberName = $relationship->getMemberName();
 
-                    foreach($results as $resultBO) {
-                        $key = $resultBO->getId();
-                        if (isset($relationshipData[$relationshipName][$key])) {
-                            $targetBO = $relationshipData[$relationshipName][$key];
-                            $targetBO->setMember($memberName, $resultBO);
-                            $targetBO->resetDirtyFlag($memberName);
-                        } //if
-                    } //foreach
-
-                    break;
-                case \CoreLib\Data\Relationship::TYPE_MANY_TO_ONE:
-                    $idsToLoad = array_keys($relationshipData[$relationshipName]);
-                    $dao = $relationship->getDAO();
-                    $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
-
-                    $results = $dao->search("id IN (". implode(",", $idsToLoad) .")");
-                    $memberName = $relationship->getMemberName();
-
-                    foreach($results as $resultBO) {
-                        $key = $resultBO->getId();
-                        if (isset($relationshipData[$relationshipName][$key])) {
-                            foreach ($relationshipData[$relationshipName][$key] as $targetBO) {
+                        foreach($results as $resultBO) {
+                            $key = $resultBO->getId();
+                            if (isset($relationshipData[$relationshipName][$key])) {
+                                $targetBO = $relationshipData[$relationshipName][$key];
                                 $targetBO->setMember($memberName, $resultBO);
                                 $targetBO->resetDirtyFlag($memberName);
-                            } //foreach
-                        } //if
-                    } //foreach
+                            } //if
+                        } //foreach
 
-                    break;
-                case \CoreLib\Data\Relationship::TYPE_ONE_TO_MANY:
-                    /* The link is done on the target DAO site. The current 
-                     * result Ids are used in the search condition. Lets say
-                     * we are trying to load a persons' contacts the keyName 
-                     * would be personId property of the contact's DAO. We 
-                     * then append to the collection genereated in the main
-                     * load loop.  */
-                    $idsToLoad = array_keys($collection);
+                        break;
+                    case \CoreLib\Data\Relationship::TYPE_MANY_TO_ONE:
+                        $idsToLoad = array_keys($relationshipData[$relationshipName]);
+                        
+                        $dao = $relationship->getDAO();
+                        $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
 
-                    $dao = $relationship->getDAO();
-                    $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
+                        $results = $dao->search("id IN (". implode(",", $idsToLoad) .")");
+                        $memberName = $relationship->getMemberName();
 
-                    $keyName = $relationship->getKeyMemberName();
-                    $results = $dao->search("{$keyName} IN (". implode(",", $idsToLoad) .")");
+                        foreach($results as $resultBO) {
+                            $key = $resultBO->getId();
+                            if (isset($relationshipData[$relationshipName][$key])) {
+                                foreach ($relationshipData[$relationshipName][$key] as $targetBO) {
+                                    $targetBO->setMember($memberName, $resultBO);
+                                    $targetBO->resetDirtyFlag($memberName);
+                                } //foreach
+                            } //if
+                        } //foreach
 
-                    $memberName = $relationship->getMemberName();
+                        break;
+                    case \CoreLib\Data\Relationship::TYPE_ONE_TO_MANY:
+                        /* The link is done on the target DAO side. The current 
+                         * result Ids are used in the search condition. Lets say
+                         * we are trying to load a persons' contacts the keyName 
+                         * would be personId property of the contact's DAO. We 
+                         * then append to the collection genereated in the main
+                         * load loop.  */
+                        $idsToLoad = $resultIds;
 
-                    foreach($results as $resultBO) {
-                        $collectionId = $resultBO->getMember($keyName);
-                        if (isset($collection[$collectionId])) {
-                            $targetCollection = $collection[$collectionId]->getMember($memberName);
-                            $targetCollection->append($resultBO);
-                        } //if
-                    } //foreach
+                        $dao = $relationship->getDAO();
+                        $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
 
-                    break;
-            } //switch
-                
-        } //foreach
+                        $keyName = $relationship->getKeyMemberName();
+                        $results = $dao->search("{$keyName} IN (". implode(",", $idsToLoad) .")");
+
+                        $memberName = $relationship->getMemberName();
+
+                        foreach($results as $resultBO) {
+                            $collectionId = $resultBO->getMember($keyName);
+                            if (isset($collection[$collectionId])) {
+                                $targetCollection = $collection[$collectionId]->getMember($memberName);
+                                $targetCollection->append($resultBO);
+                            } //if
+                        } //foreach
+
+                        break;
+                    case \CoreLib\Data\Relationship::TYPE_MANY_TO_MANY:
+                        /* The link is done on the target DAO side. The current 
+                         * result Ids are used in the search condition. Lets say
+                         * we are trying to load a persons' contacts the keyName 
+                         * would be personId property of the contact's DAO. We 
+                         * then append to the collection genereated in the main
+                         * load loop.  */
+                        $idsToLoad = $resultIds;
+
+                        $dao = $relationship->getDAO();
+                        $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
+
+                        $keyName = $relationship->getKeyMemberName();
+                        $memberName = $relationship->getMemberName();
+                        $resultMemberName = $relationship->getResultMemberName();
+
+                        $results = $dao->search(
+                            "{$keyName} IN (". implode(",", $idsToLoad) .")",
+                            array(
+                                'loadRelationships' => $resultMemberName
+                            )
+                        );
+
+                        foreach($results as $resultBO) {
+                            $collectionId = $resultBO->getMember($keyName);
+                            if (isset($collection[$collectionId])) {
+                                $targetCollection = $collection[$collectionId]->getMember($memberName);
+                                $targetCollection->append($resultBO->getMember($resultMemberName));
+                            } //if
+                        } //foreach
+
+                        break;
+                } //switch
+                    
+            } //foreach
+
+        } //if
 
         return $collection;
 
