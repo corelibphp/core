@@ -323,7 +323,11 @@ abstract class StoreMySQL extends \Corelib\Data\DataStoreObject
         
         $purge = (key_exists('purge', $options) && $options['purge'] ? true : false );
 
-        if ($purge) {
+        $objectClass = $this->getObjectClass();
+        $allowedMembers = $objectClass::getAllowedMembers();
+
+        /* always purge if there is not disabled column */
+        if ($purge || !isset($allowedMembers['disabled'])) {
             $deleteSQL = "
                 DELETE FROM 
                     $tableName 
