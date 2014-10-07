@@ -578,7 +578,10 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
                             $collectionId = $resultBO->getMember($keyName);
                             if (isset($collection[$collectionId])) {
                                 $targetCollection = $collection[$collectionId]->getMember($memberName);
-                                $targetCollection->append($resultBO->getMember($resultMemberName));
+                                $item = $resultBO->getMember($resultMemberName);
+                                if ($item !== null) {
+                                    $targetCollection->append($item);
+                                } //if
                             } //if
                         } //foreach
 
