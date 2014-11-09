@@ -341,9 +341,16 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
         $relationshipData = array();
         $relationshipsToLoad = array();
         $relationshipsToLoadInLoop = array();
+        $relationshipOptions = array();
         if (isset($options['loadRelationships'])) {
             if (is_array($options['loadRelationships'])) {
-                foreach ($options['loadRelationships'] as $relationshipName) {
+                foreach ($options['loadRelationships'] as $nameOrIndex => $relationshipNameOrOptions) {
+                    if (is_array($relationshipNameOrOptions)) {
+                        $relationshipOptions[$nameOrIndex] = $relationshipNameOrOptions;
+                        $relationshipName = $nameOrIndex;
+                    } else {
+                        $relationshipName = $relationshipNameOrOptions;
+                    } //if
                     $relationshipsToLoad[$relationshipName] = true;
                 } // foreach()
             } else {
@@ -486,13 +493,15 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
             foreach (array_keys($relationshipsToLoad) as $relationshipName) {
                 $relationship = $relationships[$relationshipName];
 
+                $currentRelationshipOptions = isset($relationshipOptions[$relationshipName]) ? $relationshipOptions[$relationshipName] : array();
+
                 switch ($relationship->getType()) {
                     case \CoreLib\Data\Relationship::TYPE_ONE_TO_ONE:
                         $idsToLoad = array_keys($relationshipData[$relationshipName]);
                         $dao = $relationship->getDAO();
                         $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
 
-                        $results = $dao->search("id IN (". implode(",", $idsToLoad) .")");
+                        $results = $dao->search("id IN (". implode(",", $idsToLoad) .")", $currentRelationshipOptions);
                         $memberName = $relationship->getMemberName();
 
                         foreach($results as $resultBO) {
@@ -511,7 +520,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
                         $dao = $relationship->getDAO();
                         $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
 
-                        $results = $dao->search("id IN (". implode(",", $idsToLoad) .")");
+                        $results = $dao->search("id IN (". implode(",", $idsToLoad) .")", $currentRelationshipOptions);
                         $memberName = $relationship->getMemberName();
 
                         foreach($results as $resultBO) {
@@ -538,7 +547,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
                         $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
 
                         $keyName = $relationship->getKeyMemberName();
-                        $results = $dao->search("{$keyName} IN (". implode(",", $idsToLoad) .")");
+                        $results = $dao->search("{$keyName} IN (". implode(",", $idsToLoad) .")", $currentRelationshipOptions);
 
                         $memberName = $relationship->getMemberName();
 
@@ -546,7 +555,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
                             $collectionId = $resultBO->getMember($keyName);
                             if (isset($collection[$collectionId])) {
                                 $targetCollection = $collection[$collectionId]->getMember($memberName);
-                                $targetCollection->append($resultBO);
+                                $targetCollection->offsetSet($resultBO->getId(),$resultBO);
                             } //if
                         } //foreach
 
@@ -567,11 +576,38 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
                         $memberName = $relationship->getMemberName();
                         $resultMemberName = $relationship->getResultMemberName();
 
+                        /* check if there is any relationships to load already
+                         * if so make sure the relationship we need is there  */
+                        if (isset($currentRelationshipOptions['loadRelationships'])) {
+                            $loadRelationships = $currentRelationshipOptions['loadRelationships'];
+
+                            if (is_array($loadRelationships)) {
+
+                                $found = false;
+                                foreach ($loadRelationships as $nameOrIndex => $relationshipNameOrOptions) {
+                                    $relationshipName = (is_array($relationshipNameOrOptions) ? $nameOrIndex : $relationshipNameOrOptions);
+                                    if ($relationshipName === $resultMemberName) {
+                                        $found = true;
+                                        break;
+                                    } //if
+                                } //foreach
+
+                                if (!$found) {
+                                    $loadRelationships[] = $resultMemberName;
+                                } //if
+
+                            } else {
+                                $loadRelationships = $resultMemberName;
+                            } //if
+
+                            $currentRelationshipOptions['loadRelationships'] = $loadRelationships;
+                        } else {
+                            $currentRelationshipOptions['loadRelationships'] = $resultMemberName;
+                        } //if
+
                         $results = $dao->search(
                             "{$keyName} IN (". implode(",", $idsToLoad) .")",
-                            array(
-                                'loadRelationships' => $resultMemberName
-                            )
+                            $currentRelationshipOptions
                         );
 
                         foreach($results as $resultBO) {
@@ -580,7 +616,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
                                 $targetCollection = $collection[$collectionId]->getMember($memberName);
                                 $item = $resultBO->getMember($resultMemberName);
                                 if ($item !== null) {
-                                    $targetCollection->append($item);
+                                    $targetCollection->offsetSet($item->getId(),$item);
                                 } //if
                             } //if
                         } //foreach
