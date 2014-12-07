@@ -301,6 +301,12 @@ abstract class BusinessObject
                     if (isset($object['properties'])) { 
                         if (is_array($object['properties'])) {
                             foreach ($object['properties'] as $propertyName => $propertyValue) {
+                                switch ($propertyName) {
+                                    case 'defaultValues':
+                                    case 'allowedMembers':
+                                        continue 2;
+                                        break;
+                                } //if
                                 $setter = 'set' . ucfirst($propertyName);
                                 if (is_array($propertyValue) && isset($propertyValue['__className__'])) {
                                     /* calls static method of classType ex. LibCollection::toObject() */
