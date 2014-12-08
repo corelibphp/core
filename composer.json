@@ -1,5 +1,6 @@
 {
     "name": "corelib/core",
+    "description": "Corelib is mainly a Object Relational Mapper (ORM) for PHP. It focuses on flexibility and ease of use.",
     "autoload": {
         "psr-0": {
             "Corelib\\": "src/"
