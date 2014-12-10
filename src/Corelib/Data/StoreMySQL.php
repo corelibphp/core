@@ -324,7 +324,7 @@ abstract class StoreMySQL extends \Corelib\Data\DataStoreObject
         $purge = (key_exists('purge', $options) && $options['purge'] ? true : false );
 
         $objectClass = $this->getObjectClass();
-        $allowedMembers = $objectClass::getAllowedMembers();
+        $allowedMembers = array_flip($objectClass::getAllowedMembers());
 
         /* always purge if there is not disabled column */
         if ($purge || !isset($allowedMembers['disabled'])) {
@@ -346,7 +346,7 @@ abstract class StoreMySQL extends \Corelib\Data\DataStoreObject
                 LIMIT 1
             ";
         } //if
-        
+
         $db->query($deleteSQL);
         
     } // commonDelete()
