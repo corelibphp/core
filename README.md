@@ -6,7 +6,7 @@ Corelib is mainly a Object Relational Mapper (ORM) for PHP. It focuses on flexib
 Example
 --------
 
-```
+```php
 <?php
 $userDAO = \Corelib\User\UserFactory::getUserDAO();
 $userDSO = \Corelib\User\UserFactory::getUserDSO();
@@ -14,20 +14,26 @@ $userDSO = \Corelib\User\UserFactory::getUserDSO();
 $userCollection = $userDAO->search("email LIKE '%@gmail.com' AND emailConfirmed = {$userDAO->boolean(true)}");
 
 foreach ($userCollection as $userBO) {
-    echo "{$userBO->getName()} <{$userBO->getEmail()}>";
+    echo "Locking user {$userBO->getName()} <{$userBO->getEmail()}>";
     
     $userBO->setLocked(true);
     
     try {
         $userDSO->save($userBO);
     } catch (Exception $e)  {
-        echo "Problem Saving User {$userBO->getName()";
+        echo "Problem saving user {$userBO->getName()";
     }
 }
 ```
 
 Installing
 ----------
+
+### Using Composer
+```bash
+# in you roject directory
+$composer require "corelib/core ~0.5.0"
+```
 
 Structures
 ----------
