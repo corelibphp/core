@@ -3,6 +3,29 @@ Corelib
 
 Corelib is mainly a Object Relational Mapper (ORM) for PHP. It focuses on flexibility and ease of use.
 
+Example
+--------
+
+```
+<?php
+$userDAO = \Corelib\User\UserFactory::getUserDAO();
+$userDSO = \Corelib\User\UserFactory::getUserDSO();
+
+$userCollection = $userDAO->search("email LIKE '%@gmail.com' AND emailConfirmed = {$userDAO->boolean(true)}");
+
+foreach ($userCollection as $userBO) {
+    echo "{$userBO->getName()} <{$userBO->getEmail()}>";
+    
+    $userBO->setLocked(true);
+    
+    try {
+        $userDSO->save($userBO);
+    } catch (Exception $e)  {
+        echo "Problem Saving User {$userBO->getName()";
+    }
+}
+```
+
 Installing
 ----------
 
