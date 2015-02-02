@@ -468,7 +468,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
         $resultCount = count($collection);
         if ($totalResultCount) {
             $limit = isset($options['limit']) ? $options['limit'] : 0;
-            if ($resultCount < $limit || $limit === 0) {
+            if ( ($resultCount < $limit && $offset === 0) || $limit === 0) {
                 $collection->setFullCollectionCount($resultCount);
             } else {
                 $countSQL = "
