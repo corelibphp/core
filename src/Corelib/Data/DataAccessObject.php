@@ -17,6 +17,11 @@ abstract class DataAccessObject
     private $relationships = array();
 
     /**
+     * @var  \Corelib\Data\PrimaryKey
+     */
+    private $primaryKey = null;
+
+    /**
      * retrieve value for relationships
      *
      * @since  2014-03-08
@@ -61,7 +66,23 @@ abstract class DataAccessObject
     public function getRelationship($name) {
         return (isset($this->relationships[$name]) ? $this->relationships[$name] : null);
     } // getRelationship()
-    
+
+    /**
+     * @return string
+     */
+    public function getPrimaryKey()
+    {
+        return $this->primaryKey;
+    }
+
+    /**
+     * @param string $primaryKey
+     */
+    public function setPrimaryKey($primaryKey)
+    {
+        $this->primaryKey = $primaryKey;
+    }
+
     /**
      * class constructor
      *
@@ -69,7 +90,7 @@ abstract class DataAccessObject
      * @since 2013
      */
     public function __construct() {
-        
+        $this->primaryKey = new  \Corelib\Data\PrimaryKey();
     } // __construct()
     
     /**

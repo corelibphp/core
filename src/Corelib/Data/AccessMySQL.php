@@ -421,7 +421,8 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
 
         while ($row = $this->rowFilter($searchQuery->fetch())) {
 
-            $id = $row['id'];
+            $id = $this->getPrimaryKey()->buildKey($row);
+
             $resultIds[] = $id;
 
             $resultBO = new $objectClass($row);
