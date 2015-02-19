@@ -14,15 +14,22 @@ namespace Corelib\Database;
  */
 class DatabaseFactory extends \Corelib\Standard\Factory
 {
+
+
+    /**
+     * @var array
+     */
+    private static $pool = array();
+
+
     /**
      * retreive a confirgured PDO object based on key
      *
      * @author Patrick Forget <patforg at geekpad.ca>
      */
     public static function getPDO($key = 'write') {
-        static $pool = array();
         
-        if (!isset($pool[$key])) {
+        if (!isset(self::$pool[$key])) {
             $configDAO = \Corelib\Config\ConfigFactory::getConfigDAO();
             $config = $configDAO->getElementEnvValuesById('db');
             
@@ -32,11 +39,25 @@ class DatabaseFactory extends \Corelib\Standard\Factory
             
             $db = new \PDO($dsn, $user, $pass);
             $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-            $pool[$key] = $db;
+            self::$pool[$key] = $db;
             
         } //if
         
-        return $pool[$key];
+        return self::$pool[$key];
     } // getPDO()
+
+    /**
+     * reset a connection from the cached connection pool
+     *
+     * @since  2015-02-19
+     * @author Patrick Forget <patforg@geekpad.ca>
+     */
+    public static function resetPDO($key = 'write') {
+        if (isset(self::$pool[$key])) {
+            self::$pool[$key] = null;
+            unset(self::$pool[$key]);
+        } //if
+    } // resetPDO()
+
     
 } // DatabaseFactory class
