@@ -8,7 +8,10 @@ Example
 
 ```php
 <?php
+// get Data Access Object (DAO) which allows to read isntances from storage
 $userDAO = \Corelib\User\UserFactory::getUserDAO();
+
+//get Data Storage OBject (DSO) which allwos us to store isntances into storage
 $userDSO = \Corelib\User\UserFactory::getUserDSO();
 
 $userCollection = $userDAO->search("email LIKE '%@gmail.com' AND emailConfirmed = {$userDAO->boolean(true)}");
@@ -31,7 +34,7 @@ Installing
 
 ### Using Composer
 ```bash
-# in you roject directory
+# in your project directory run
 $composer require "corelib/core ~0.5.0"
 ```
 
