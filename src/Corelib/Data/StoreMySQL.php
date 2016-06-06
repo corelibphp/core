@@ -195,7 +195,12 @@ abstract class StoreMySQL extends \Corelib\Data\DataStoreObject
         
         /* Field Options */
         $fieldsToIgnore = isset($options['fieldsToIgnore']) ? array_flip($options['fieldsToIgnore']) : array();
-        $columnMap =  isset($options['columnMap']) ? $options['columnMap'] : $this->getColumnMap();
+
+        $columnMap = $this->getColumnMap();
+        if (isset($options['columnMap'])) {
+            $columnMap = array_merge($columnMap,  $options['columnMap']);
+        } //if
+
         $multiLangColumn = isset($options['multiLangColumn']) && $options['multiLangColumn'] ? true : false;
         $filter = isset($options['columnFilter']) ? $options['columnFilter'] : null;
 
