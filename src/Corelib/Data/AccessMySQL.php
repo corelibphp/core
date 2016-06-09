@@ -336,6 +336,9 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
         } //if
 
         $columnMap = $this->getColumnMap();
+        if (isset($options['columnMap'])) {
+            $columnMap = array_merge($columnMap,  $options['columnMap']);
+        } //if
 
         $relationships = $this->getRelationships();
         $relationshipData = array();
@@ -381,7 +384,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
         } //foreach()
 
         ob_start();
-        foreach ($this->getColumnMap() as $propName => $columnName) {
+        foreach ($columnMap as $propName => $columnName) {
             if (isset($fieldsToIgnore[$propName])) {
                 continue;
             } //if
