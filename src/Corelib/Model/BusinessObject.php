@@ -197,7 +197,8 @@ abstract class BusinessObject
         $allowedValues = static::getDefaultValues();
 
         $results = array();
-        foreach ($allowedValues as $key => $value) {
+        foreach ($allowedValues as $key => $ignore) {
+          $value = $this->getMember($key);
           if ( $value instanceof \Corelib\Model\BusinessObject) {
             $results[$key] = $value->getMembers();
           } else {
