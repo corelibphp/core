@@ -184,6 +184,32 @@ abstract class BusinessObject
     
 
     /**
+     * get all members as an k/v associative array
+     *
+     * will get recursively members
+     *
+     * @since  2017-04-01
+     * @author Patrick Forget <patforg@geekpad.ca>
+     */
+    public function getMembers() {
+                
+        /* filter out values that are not allowed */
+        $allowedValues = static::getDefaultValues();
+
+        $results = array();
+        foreach ($allowedValues as $key => $value) {
+          if ( $value instanceof \Corelib\Model\BusinessObject) {
+            $results[$key] = $value->getMembers();
+          } else {
+            $results[$key] = $value;
+          } //if
+        } //foreach
+
+        return $results;
+
+    } // setMembers()
+
+    /**
      * set multiple members at once
      *
      * @since  2014-03-06
