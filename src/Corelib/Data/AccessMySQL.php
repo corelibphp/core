@@ -500,21 +500,45 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
 
                 switch ($relationship->getType()) {
                     case \CoreLib\Data\Relationship::TYPE_ONE_TO_ONE:
-                        $idsToLoad = array_keys($relationshipData[$relationshipName]);
-                        $dao = $relationship->getDAO();
-                        $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
+                        // if key name is set the mapping id is on 
+                        // the relationship BO
+                        $keyName = $relationship->getKeyMemberName();
+                        if (strlen($keyName) > 0) {
 
-                        $results = $dao->search("id IN (". implode(",", $idsToLoad) .")", $currentRelationshipOptions);
-                        $memberName = $relationship->getMemberName();
+                          $idsToLoad = $resultIds;
 
-                        foreach($results as $resultBO) {
-                            $key = $resultBO->getId();
-                            if (isset($relationshipData[$relationshipName][$key])) {
-                                $targetBO = $relationshipData[$relationshipName][$key];
-                                $targetBO->setMember($memberName, $resultBO);
-                                $targetBO->resetDirtyFlag($memberName);
-                            } //if
-                        } //foreach
+                          $dao = $relationship->getDAO();
+                          $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
+
+                          $keyName = $relationship->getKeyMemberName();
+                          $results = $dao->search("{$keyName} IN (". implode(",", $idsToLoad) .")", $currentRelationshipOptions);
+
+                          foreach($results as $resultBO) {
+                              $collectionId = $resultBO->getMember($keyName);
+                              if (isset($collection[$collectionId])) {
+                                  $targetBO = $collection[$collectionId];
+                                  $targetBO->setMember($memberName, $resultBO);
+                                  $targetBO->resetDirtyFlag($memberName);
+                              } //if
+                          } //foreach
+                        } else {
+
+                          $idsToLoad = array_keys($relationshipData[$relationshipName]);
+                          $dao = $relationship->getDAO();
+                          $idsToLoad = array_map(array($dao, 'quote'), $idsToLoad);
+
+                          $results = $dao->search("id IN (". implode(",", $idsToLoad) .")", $currentRelationshipOptions);
+                          $memberName = $relationship->getMemberName();
+
+                          foreach($results as $resultBO) {
+                              $key = $resultBO->getId();
+                              if (isset($relationshipData[$relationshipName][$key])) {
+                                  $targetBO = $relationshipData[$relationshipName][$key];
+                                  $targetBO->setMember($memberName, $resultBO);
+                                  $targetBO->resetDirtyFlag($memberName);
+                              } //if
+                          } //foreach
+                        } //if
 
                         break;
                     case \CoreLib\Data\Relationship::TYPE_MANY_TO_ONE:

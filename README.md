@@ -1,10 +1,8 @@
-Corelib
-=======
+# Corelib
 
 Corelib is mainly a Object Relational Mapper (ORM) for PHP. It focuses on flexibility and ease of use.
 
-Example
---------
+## Example
 
 ```php
 <?php
@@ -29,8 +27,7 @@ foreach ($userCollection as $userBO) {
 }
 ```
 
-Installing
-----------
+## Installing
 
 ### Using Composer
 ```bash
@@ -38,8 +35,7 @@ Installing
 $composer require "corelib/core ~0.5.0"
 ```
 
-Structures
-----------
+## Structures
 
 Corelib has several structures it uses here are the main ones.
 
@@ -62,3 +58,6 @@ Corelib has several structures it uses here are the main ones.
 * Relationships
 
     Objects that define how Models are related to each other.
+
+
+
