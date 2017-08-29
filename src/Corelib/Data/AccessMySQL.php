@@ -328,7 +328,7 @@ abstract class AccessMySQL extends \CoreLib\Data\DataAccessObject
      */
     protected function commonSearch($condition, $tableName, $options) {
 
-        $fieldsToIngnore = isset($options['fieldsToIgnore']) ? $options['fieldsToIgnore'] : array();
+        $fieldsToIgnore = isset($options['fieldsToIgnore']) ? array_flip($options['fieldsToIgnore']) : array();
         $totalResultCount = isset($options['totalResultCount']) && $options['totalResultCount'] === true ? true : false;
 
         if (strpos($tableName, "`") !== false) {
