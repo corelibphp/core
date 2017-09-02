@@ -17,6 +17,11 @@ abstract class DataAccessObject
     private $relationships = array();
 
     /**
+     * @var  \Corelib\Data\PrimaryKey
+     */
+    private $primaryKey = null;
+
+    /**
      * retrieve value for relationships
      *
      * @since  2014-03-08
@@ -24,7 +29,8 @@ abstract class DataAccessObject
      *
      * @return array current value of relationships
      */
-    public function getRelationships() {
+    public function getRelationships()
+    {
         return $this->relationships;
     } // getRelationships()
 
@@ -36,8 +42,9 @@ abstract class DataAccessObject
      *
      * @param array value to assign to relationships
      */
-    public function setRelationships($relationships) {
-        foreach($relationships as $name => $relationship) {
+    public function setRelationships($relationships)
+    {
+        foreach ($relationships as $name => $relationship) {
             $this->setRelationship($name, $relationship);
         } //foreach
     } // setRelationships()
@@ -48,7 +55,8 @@ abstract class DataAccessObject
      * @since  2014-10-03
      * @author Patrick Forget <patforg@geekpad.ca>
      */
-    public function setRelationship($name, $relationship) {
+    public function setRelationship($name, $relationship)
+    {
         $this->relationships[$name] = $relationship;
     } // setRelationship()
 
@@ -58,18 +66,36 @@ abstract class DataAccessObject
      * @since  2014-10-03
      * @author Patrick Forget <patforg@geekpad.ca>
      */
-    public function getRelationship($name) {
+    public function getRelationship($name)
+    {
         return (isset($this->relationships[$name]) ? $this->relationships[$name] : null);
     } // getRelationship()
-    
+
+    /**
+     * @return string
+     */
+    public function getPrimaryKey()
+    {
+        return $this->primaryKey;
+    }
+
+    /**
+     * @param string $primaryKey
+     */
+    public function setPrimaryKey($primaryKey)
+    {
+        $this->primaryKey = $primaryKey;
+    }
+
     /**
      * class constructor
      *
      * @author Patrick Forget <patforg at geekpad.ca>
      * @since 2013
      */
-    public function __construct() {
-        
+    public function __construct()
+    {
+        $this->primaryKey = new  \Corelib\Data\PrimaryKey();
     } // __construct()
     
     /**
@@ -107,5 +133,4 @@ abstract class DataAccessObject
      * @return string representation of value depending on storage type
      */
     abstract public function date($int);
-    
-} // DataAccessObject class
+}
